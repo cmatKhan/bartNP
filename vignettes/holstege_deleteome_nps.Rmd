@@ -1,0 +1,251 @@
+---
+title: "holstege_deleteome_nps"
+output:
+  html_vignette:
+    toc: true
+    number_sections: true
+bibliography: references.bib
+link-citations: true
+vignette: >
+  %\VignetteIndexEntry{holstege_deleteome_nps}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  echo = TRUE,
+  include = TRUE,
+  eval = FALSE
+)
+```
+
+# Setup
+
+```{r setup}
+library(tidyverse)
+library(gprofiler2)
+library(rtracklayer)
+```
+
+# Raw Data
+
+As of now, the raw data originally published in @pmid24766815 is available 
+through the [lab's website](https://deleteome.holstegelab.nl/). In this example, 
+I am using [deleteome_all_mutants_svd_transformed.txt](https://deleteome.holstegelab.nl/data/downloads/deleteome_all_mutants_svd_transformed.txt) 
+which is the originally published data with an effort made to remove a slow-growth 
+factor of unwanted variance @https://doi.org/10.15252/msb.20145172.
+
+## Parsing the kemmeren data
+
+```{r}
+
+parse_kemmeren_data = function(kemmeren_svd){
+
+  # read kemmeren_svd 
+  kemmeren_data_mutants = read_tsv(kemmeren_svd)
+  
+  # add gene_id as the column name of the first column
+  colnames(kemmeren_data_mutants)[1] = 'gene_id'
+  
+  # remove any 'matA' samples
+  kemmeren_data_mutants = kemmeren_data_mutants %>%
+    select(-all_of(
+      colnames(kemmeren_data_mutants)[
+        str_detect(colnames(kemmeren_data_mutants), "matA")]))
+
+  # create a table with columns deleted_locus, which is extracted from the colnames 
+  # of the kemmeren data, and another column with the corresponding column names
+  kemmeren_col_data = tibble(
+    deleted_locus = str_extract(
+      colnames(kemmeren_data_mutants)[3:ncol(kemmeren_data_mutants)], ".+(?=\\.del)"), 
+    colnames = colnames(kemmeren_data_mutants)[3:ncol(kemmeren_data_mutants)]
+  )
+
+  # use gprofilr2 to get the corresponding scerevisiae systematic IDs from the
+  # gene names in the kemmeren column names
+  kemmeren_cols_convert = gconvert(kemmeren_col_data$deleted_locus,
+                               organism = "scerevisiae",
+                               mthreshold = 1,
+                               filter_na = FALSE)
+
+  # create a dataframe which will act as the colData of the NetProphetDataSet
+  coldata = kemmeren_col_data %>% left_join(
+    select(kemmeren_cols_convert, -all_of(c('input_number', 'target_number'))),
+    by = c("deleted_locus" = "input")
+  ) %>%
+    filter(!is.na(target)) %>%
+    select(-deleted_locus) %>%
+    dplyr::rename(deleted_locus = target, name = name)
+
+  # return a list with slots coldata and expr. The expr matrix is the kemmeren 
+  # data, but filtered for those columns in the coldata
+  list(
+      coldata = coldata,
+      expr = kemmeren_data_mutants[,c('gene_id', 'commonName', coldata$colnames)]
+  )
+
+}
+```
+
+## Read in s. cerevisiae annotations
+
+[Yeast Genome files may be found here](http://sgd-archive.yeastgenome.org/sequence/S288C_reference/)
+
+```{r}
+YEAST_GFF = "~/Desktop/rnaseq_pipeline/rnaseq_pipeline/genome_files/S288C_R64/S288C_R64.gff"
+
+# list of top level gene features. Note that the kemmeren data does say that it
+# is at the transcript level. However, yeast genes have few exons and these seem 
+# to be mostly equivalent to genes. That said, I would suggest doing some investigation 
+# on your own
+
+GFF_GENE_FEATURES = c('gene', 'pseudogene', 'tRNA_gene', 
+                      'rRNA_gene', 'ncRNA_gene', 'snoRNA_gene', 'snRNA_gene')
+
+yeast_gff = import(YEAST_GFF)
+
+yeast_genes = yeast_gff[yeast_gff$type %in% GFF_GENE_FEATURES]
+```
+
+## Read in the list of regulators from the NP2 paper
+
+## Parse Uniprot data
+
+To get the data I am using, and more, go to the Uniprot website and enter the 
+following into the search:
+
+```
+taxonomy:"Saccharomyces cerevisiae (strain ATCC 204508 / S288c) (Baker's yeast) [559292]" AND reviewed:yes
+```
+
+Note that you can select a different set of columns if you click the 'column' 
+button
+
+```{r}
+UNIPROT_DATA = "data/uniprot_yeast_20211102.tab"
+
+# lots of parsing -- provided as an example, but you will likely need to look 
+# at the file and extract what you'd like. This will be required if you go to 
+# the website and select/download a different set of columns
+
+uniprot = read_tsv(UNIPROT_DATA) %>%
+  dplyr::rename(ID = `Gene names  (ordered locus )`,
+                dna_binding = `DNA binding`) %>%
+  mutate(dna_binding_interval        = str_extract(dna_binding, "\\d+\\.\\.\\d+"),
+         dna_binding_domain          = str_extract(dna_binding, '(?<=note=)".+"'),
+         dna_binding_domain_evidence = str_extract(dna_binding, '(?<=evidence=)".+"')) %>%
+  separate(dna_binding_interval, sep="\\.\\.", into=c("dna_binding_start", "dna_binding_end")) %>%
+  mutate(dna_binding_start = as.integer(dna_binding_start),
+         dna_binding_end = as.integer(dna_binding_end),
+         dna_binding_domain = trimws(str_remove_all(dna_binding_domain, ';|"|/evidence.+')),
+         dna_binding_domain_evidence = str_remove_all(dna_binding_domain_evidence, ';|"'),
+         dna_binding_domain = str_replace(dna_binding_domain,"A\\.T hook 1 DNA_BIND 1502\\.\\.1513  /note=A.T hook 2 DNA_BIND 1516\\.\\.1526  /note=A\\.T hook 3", "A.T hook"))
+
+colnames(uniprot) = trimws(str_remove_all(colnames(uniprot), "Cross-reference|\\(|\\)|"), which = "both")
+```
+
+
+## Read in the list of regulators used in the NP2 paper
+
+```{r}
+ROWNAMES_GENE_CONVERT = here("data/gProfiler_scerevisiae_11-1-2021_5-31-10.csv")
+regulators_df = read_csv(ROWNAMES_GENE_CONVERT)
+```
+
+# create kemmeren granges
+
+```{r}
+regulators_uniprot = uniprot %>%
+  filter(ID %in% regulators_df$initial_alias)
+
+cant_find_id = setdiff(kemmeren_data$expr$gene_id, yeast_gff$ID)
+
+# deleted if the annotation has since been removed or merged from the annotations
+replace_wrong_ids        = c("YKL047W", "YLR003C", "YAR061W", "DELETED", "DELETED", "DELETED",   "DELETED", "DELETED")
+names(replace_wrong_ids) = c("ANR2",    "CMS1",    "YAR062W", "YDL038C", "YGR272C",  "YIL080W",  "YIL168W", "YIR044C")
+
+
+kemmeren_data$expr[which(kemmeren_data$expr$gene_id %in% names(replace_wrong_ids)), "gene_id"] = replace_wrong_ids
+
+kemmeren_data$expr = kemmeren_data$expr %>%
+  filter(gene_id != "DELETED")
+
+setdiff(kemmeren_data$expr$gene_id, yeast_gff$ID[!is.na(yeast_gff$ID)])
+
+kemmeren_granges = yeast_gff[yeast_gff$ID %in% kemmeren_data$expr$gene_id]
+
+kemmeren_granges = kemmeren_granges[order(match(kemmeren_granges$ID,kemmeren_data$expr$gene_id))]
+
+stopifnot(identical(kemmeren_data$expr$gene_id, kemmeren_granges$ID))
+```
+
+## add gene-wise data to the granges object
+
+```{r}
+kemmeren_granges[which(is.na(kemmeren_granges$gene))]$gene =
+  kemmeren_data$expr[which(is.na(kemmeren_granges$gene)), 'commonName']
+
+kemmeren_granges$regulator = ifelse(kemmeren_granges$ID %in% regulators_df$initial_alias,
+                                    TRUE,
+                                    FALSE)
+
+uniprot_cols_for_granges = as_tibble(kemmeren_granges) %>%
+  left_join(uniprot)
+
+elementMetadata(kemmeren_granges)[colnames(uniprot)[3:ncol(uniprot)]] =
+  uniprot_cols_for_granges[,colnames(uniprot)[3:ncol(uniprot)]]
+
+kem_tfs = kemmeren_granges[!is.na(kemmeren_granges$dna_binding_domain)]
+
+expr = as.matrix(select(kemmeren_data$expr, -gene_id, -commonName))
+rownames(expr) = kemmeren_data$expr$gene_id
+
+del_loci_no_gene = setdiff(kemmeren_data$coldata$deleted_locus,
+                           kemmeren_granges[kemmeren_granges$ID %in% kemmeren_data$coldata$deleted_locus]$ID)
+
+fltr_coldata = kemmeren_data$coldata[!kemmeren_data$coldata$deleted_locus %in% del_loci_no_gene, ]
+
+fltr_expr = expr[,fltr_coldata$colnames]
+
+```
+
+# create the regulation matrix
+
+```{r}
+
+regulators = read_tsv("data/YEAST_DATA/YEAST/OUTPUT/regulators", col_names = FALSE)$X1
+
+regulators = regulators[regulators %in% fltr_coldata$deleted_locus]
+
+tf_fltr = kemmeren_granges$ID %in% regulators
+
+regulation_matrix = matrix(TRUE, nrow(fltr_expr), nrow(fltr_expr),
+                           dimnames = list(rownames(fltr_expr), rownames(fltr_expr)))
+regulation_matrix = regulation_matrix[,rownames(fltr_expr) %in% regulators]
+
+self_reg = intersect(rownames(regulation_matrix), colnames(regulation_matrix))
+
+regulation_matrix[cbind(self_reg,self_reg)] = FALSE
+
+```
+
+# create the NetProphetDataSet
+
+```{r}
+kem_np = NetProphetDataSet(
+  expr        = fltr_expr,
+  regMatrix   = regulation_matrix,
+  rowRanges   = kemmeren_granges,
+  colData     = fltr_coldata
+)
+```
+
+# Result
+
+```{r}
+
+```
+
