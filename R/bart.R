@@ -24,11 +24,11 @@ bartForOneGene <- function(regulators_predictor_matrix,
                            gene_name = NULL,
                            ...) {
 
-bart_out = BART::mc.wbart(
-  x.train = regulators_predictors_matrix,
-  y.train = gene_response_array,
-  x.test  = test_data_matrix,
-  ...
-)
+  BART::mc.wbart(
+    x.train = regulators_predictor_matrix,
+    y.train = gene_response_array,
+    x.test  = test_data_matrix,
+    ...
+  )
 
 }

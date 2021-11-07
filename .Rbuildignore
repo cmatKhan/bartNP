@@ -1,3 +1,5 @@
+^renv$
+^renv\.lock$
 ^bartNP\.Rproj$
 ^\.Rproj\.user$
 ^\.github$

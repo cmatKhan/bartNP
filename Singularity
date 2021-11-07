@@ -7,11 +7,6 @@ Include: bash
 
 Help me. I'm in the container.
 
-%files
-
-  # copy code base into container
-  ../bartNP /usr/local/bin/
-
 %labels
 
     Maintainer Vanessasaurus
@@ -53,7 +48,10 @@ Help me. I'm in the container.
     && apt-get purge
 
   #echo "build source code"
-  #R CMD INSTALL --no-multiarch --with-keep.source /usr/local/bin/bartNP
+  R --slave -e 'install.packages("remotes", dependencies = TRUE, Ncpus = 8)'
+  # note -- can put options to R CMD build here, eg those configurations for Rmpi
+  R --slave -e 'remotes::install_github("cmatKhan/bartNP",
+  dependencies = TRUE, upgrade = "always", force = TRUE)'
 
 #  --configure-args="  \\
 #   --with-Rmpi-include=/path/to/mpi_include_dir         \\
