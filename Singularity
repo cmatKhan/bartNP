@@ -15,9 +15,6 @@ Help me. I'm in the container.
 
 %post
 
-  # don't do this for now -- but consider if it makes update faster
-  #sed -i 's/main/main restricted universe/g' /etc/apt/sources.list
-
   # setting R cran mirror. see https://cran.r-project.org/bin/linux/ubuntu/fullREADME.html
   apt install -y apt-transport-https software-properties-common
   apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
@@ -31,8 +28,10 @@ Help me. I'm in the container.
   } >> /etc/apt/sources.list
 
   apt update && apt upgrade -y && apt install -y \
+    build-essential \
     curl \
     locales \
+    libcurl4-openssl-dev \
     libncurses5-dev  \
     libncursesw5-dev \
     build-essential \
@@ -47,11 +46,11 @@ Help me. I'm in the container.
     && apt-get clean \
     && apt-get purge
 
-  #echo "build source code"
-  R --slave -e 'install.packages("remotes", dependencies = TRUE, Ncpus = 8)'
+  # build R dependencies
+  R --slave -e 'install.packages(c("remotes", "BiocManager"), dependencies = TRUE, Ncpus = 8)'
+
   # note -- can put options to R CMD build here, eg those configurations for Rmpi
-  R --slave -e 'remotes::install_github("cmatKhan/bartNP",
-  dependencies = TRUE, upgrade = "always", force = TRUE)'
+  R --slave -e 'remotes::install_github("cmatKhan/bartNP", upgrade = "always", force = TRUE, Ncpus = 8)'
 
 #  --configure-args="  \\
 #   --with-Rmpi-include=/path/to/mpi_include_dir         \\
