@@ -127,7 +127,6 @@ setMethod("[", "NetProphetDataSet", function(x, i, j, drop=TRUE) {
       )
     }
     i = as.vector(i)
-    reg_gene_fltr = reg_gene_fltr[i]
     reg_matrix = reg_matrix[i,]
   }
 
