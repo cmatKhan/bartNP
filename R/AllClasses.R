@@ -13,7 +13,7 @@
 #' @import methods
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
 .NetProphetDataSet = setClass("NetProphetDataSet",
-                              contains = "RangedSummarizedExperiment",
+                            contains = "SummarizedExperiment",
                               slots = representation(regMatrix = "matrix"))
 
 # validity check ---------------------------------------------------------------
