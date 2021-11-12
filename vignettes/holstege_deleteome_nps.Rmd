@@ -1,9 +1,10 @@
 ---
 title: "holstege_deleteome_nps"
 output:
-  html_vignette:
+  rmarkdown::html_document:
+    highlight: pygments
     toc: true
-    number_sections: true
+    fig_width: 5
 bibliography: references.bib
 link-citations: true
 vignette: >
