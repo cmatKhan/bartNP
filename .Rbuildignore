@@ -3,3 +3,9 @@
 ^bartNP\.Rproj$
 ^\.Rproj\.user$
 ^\.github$
+^LICENSE\.md$
+^bartNP.sif$
+Singularity
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

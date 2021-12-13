@@ -6,15 +6,16 @@ Authors@R:
            comment = c(ORCID = "https://orcid.org/0000-0002-2890-4242"))
 Description: Extend SummarizedExperiment with slots and functions to ease
     TF effect modelling with BART
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: MIT + file LICENSE
 biocViews:
 Depends: 
     BART (>= 2.9),
-    R (>= 4.1.1),
+    R (>= 4.1.0),
     SummarizedExperiment (>= 1.22.0)
 Imports: 
+    methods,
     magrittr,
+    S4Vectors,
     tibble
 Suggests:
     testthat (>= 3.0.0),

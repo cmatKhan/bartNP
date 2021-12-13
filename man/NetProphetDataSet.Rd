@@ -4,10 +4,29 @@
 \name{NetProphetDataSet-class}
 \alias{NetProphetDataSet-class}
 \alias{.NetProphetDataSet}
+\alias{NetProphetDataSet}
 \title{A container for expression data meant to be used to infer regulator relationships}
+\usage{
+NetProphetDataSet(
+  exprMatrix = matrix(0, 0, 0),
+  regMatrix = matrix(0, 0, 0),
+  ...
+)
+}
+\arguments{
+\item{exprMatrix}{an expression matrix, eg the kemmeren microarray data set}
+}
 \description{
 A container for expression data meant to be used to infer regulator relationships
 }
+\section{Slots}{
+
+\describe{
+\item{\code{regMatrix}}{a gene (the number of genes in your expression matrix) by
+regulators (no required number) matrix where the value is TRUE if gene i
+can be regulated by regulator j, and FALSE otherwise.}
+}}
+
 \seealso{
 \itemize{
 \item \href{https://www.bioconductor.org/packages/devel/bioc/vignettes/SummarizedExperiment/inst/doc/Extensions.html}{extending SummarizedExperiment}.

@@ -11,14 +11,14 @@ regMatrix(x, ...) <- value
 
 regMatrix(x, ...)
 
-\S4method{regMatrix}{NetProphetDataSet}(x, reg_matrix) <- value
+\S4method{regMatrix}{NetProphetDataSet}(x) <- value
 
 \S4method{regMatrix}{NetProphetDataSet}(x)
 }
 \arguments{
 \item{x}{a NetProphetDataSet object}
 
-\item{reg_matrix}{a gene by regulation matrix, where the number of genes (rows) is
+\item{value}{a gene by regulation matrix, where the number of genes (rows) is
 equal to the rows in the \link{NetProphetDataSet} expression matrix}
 }
 \description{

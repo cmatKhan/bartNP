@@ -12,6 +12,9 @@
 #'
 #' @rdname exprMat
 #'
+#' @importFrom SummarizedExperiment assays
+#' @importFrom methods validObject
+#'
 #' @param x a NetProphetDataSet object
 #' @param value an expression matrix with columns equal to colData, and colnames
 #' equal to and in the same order as the colnames column of colData
@@ -24,7 +27,14 @@ setReplaceMethod("exprMat", "NetProphetDataSet", function(x, value) {
   x
 })
 
+#'
+#' extract the expression matrix
+#'
+#' Extract the expression matrix from the NetProphetDataSet
+#'
 #' @rdname exprMat
+#' @importFrom SummarizedExperiment assays
+#' @param x a NetProphetDataSet object
 #' @export
 setMethod("exprMat", "NetProphetDataSet", function(x) {
   assays(x)$expr
@@ -42,18 +52,21 @@ setMethod("exprMat", "NetProphetDataSet", function(x) {
 #'
 #' @rdname regMatrix
 #'
+#' @importFrom methods validObject
+#'
 #' @param x a NetProphetDataSet object
-#' @param reg_matrix a gene by regulation matrix, where the number of genes (rows) is
+#' @param value a gene by regulation matrix, where the number of genes (rows) is
 #'   equal to the rows in the [NetProphetDataSet] expression matrix
 #'
 #' @export
-setReplaceMethod("regMatrix", "NetProphetDataSet", function(x, reg_matrix) {
-  x@regMatrix = reg_matrix
+setReplaceMethod("regMatrix", "NetProphetDataSet", function(x, value) {
+  x@regMatrix = value
   validObject(x)
   x
 })
 
 #' @rdname regMatrix
+#' @inheritParams regMatrix
 #' @export
 setMethod("regMatrix", "NetProphetDataSet", function(x) {
   x@regMatrix
@@ -114,6 +127,21 @@ setMethod("nonRegGenes", "NetProphetDataSet", function(x) {
 
 ## subsetting custom slots ----
 
+#'
+#' subsetting the NetProphetDataSet
+#'
+#' @param x a NetProphetDataSet object
+#' @param i column index or incicies (a numeric or boolean vector)
+#' @param j column filter -- an index, name, boolean or vector of them
+#' @param drop default TRUE. This may not do anything -- need to check if
+#'   it is part of the Extending SummarizedExperiment documentation, or a
+#'   feature I added, then removed and forgot to remove the argument.
+#'
+#' @return a NetProphetDataSet. If the subsetting is on the genes, the regulation
+#'   matrix will also be gene filtered in the same way as the counts. Column
+#'   filtering does not currently affect the regulation matrix
+#'
+#'
 #' @export
 setMethod("[", "NetProphetDataSet", function(x, i, j, drop=TRUE) {
   reg_matrix = regMatrix(x)

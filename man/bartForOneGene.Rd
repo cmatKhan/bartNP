@@ -2,17 +2,9 @@
 % Please edit documentation in R/bart.R
 \name{bartForOneGene}
 \alias{bartForOneGene}
-\title{http://adv-r.had.co.nz/memory.html
-http://adv-r.had.co.nz/Profiling.html#measure-perf
-https://cran.r-project.org/web/packages/profmem/vignettes/profmem.html}
+\title{use BART to generate a network structure prediction}
 \usage{
-bartForOneGene(
-  regulators_predictor_matrix,
-  gene_response_array,
-  test_data_matrix,
-  gene_name = NULL,
-  ...
-)
+bartForOneGene(regulators_predictor_matrix, gene_response_array, ...)
 }
 \arguments{
 \item{regulators_predictor_matrix}{A sample x regulator matrix where the values
@@ -21,16 +13,14 @@ are expression of the given regulator j in sample i}
 \item{gene_response_array}{Expression of a given gene in i samples. Length
 of gene_response_array must be the same as the rows in regulators_predictor_matrix}
 
-\item{test_data_matrix}{test data for bart. See \link[BART:mc.wbart]{BART::mc.wbart}}
-
 \item{...}{additional arguments to \link[BART:mc.wbart]{BART::mc.wbart}}
 }
 \value{
-list with
+a BART object
 }
 \description{
-
-}
-\details{
-use BART to generate a network structure prediction
+The following can be used for memory and performance profiling
+\url{http://adv-r.had.co.nz/memory.html}
+\url{http://adv-r.had.co.nz/Profiling.html#measure-perf}
+\url{https://cran.r-project.org/web/packages/profmem/vignettes/profmem.html}
 }

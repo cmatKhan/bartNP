@@ -23,4 +23,6 @@ equal to and in the same order as the colnames column of colData}
 }
 \description{
 Set or replace the expression matrix in the \link{NetProphetDataSet}
+
+Extract the expression matrix from the NetProphetDataSet
 }
